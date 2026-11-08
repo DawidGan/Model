@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moja Gra 3D</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #111; }
+        canvas { display: block; }
+        #info { 
+            position: absolute; top: 15px; left: 15px; 
+            color: white; font-family: sans-serif; font-size: 16px;
+            background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 4px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="info">Ładowanie modelu...</div>
+
+    <!-- Importmapa ładująca Three.js z CDN -->
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+          }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // 1. Podstawowa scena, kamera i renderer
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a1a);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. OŚWIETLENIE (Kluczowe – bez tego model będzie czarny)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        // 3. ŁADOWANIE MODELU (względna ścieżka do pliku w tym samym katalogu)
+        const loader = new GLTFLoader();
+        loader.load(
+            './model.glb', 
+            (gltf) => {
+                const model = gltf.scene;
+                scene.add(model);
+                
+                // Schowaj informację po załadowaniu
+                document.getElementById('info').innerText = 'Model załadowany!';
+                setTimeout(() => {
+                    document.getElementById('info').style.display = 'none';
+                }, 2000);
+            },
+            (xhr) => {
+                // Pasek postępu pobierania
+                const percent = (xhr.loaded / xhr.total * 100).toFixed(0);
+                if (!isNaN(percent)) {
+                    document.getElementById('info').innerText = `Ładowanie: ${percent}%`;
+                }
+            },
+            (error) => {
+                console.error('Błąd ładowania:', error);
+                document.getElementById('info').innerText = 'Błąd! Sprawdź czy plik to model.glb';
+                document.getElementById('info').style.color = '#ff4444';
+            }
+        );
+
+        // 4. Pętla animacji (renderowanie klatek)
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Obsługa zmiany rozmiaru okna przeglądarki
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
